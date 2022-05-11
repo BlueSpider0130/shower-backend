@@ -2,9 +2,9 @@
 /* eslint-disable import/order */
 /* eslint-disable spaced-comment */
 /* eslint-disable prettier/prettier */
-const express = require('express');
-const randomUUID = require('crypto');
-const nodemailer = require('nodemailer');
+const express = require("express");
+const randomUUID = require("crypto");
+const nodemailer = require("nodemailer");
 // const mysql = require('mysql');
 
 // const connection = mysql.createConnection({
@@ -22,31 +22,31 @@ const nodemailer = require('nodemailer');
 // });
 // connection.end();
 
-require('dotenv');
+require("dotenv");
 // micro provides http helpers
-const { createError, json, send } = require('micro');
+const { createError, json, send } = require("micro");
 // microrouter provides http server routing
 //const { router, get, post } = require('microrouter');
 // serve-handler serves static assets
-const staticHandler = require('serve-handler');
+const staticHandler = require("serve-handler");
 // async-retry will retry failed API requests
-const retry = require('async-retry');
+const retry = require("async-retry");
 
-const logger = require('./controller/logger');
-const { ApiError, client: square } = require('./controller/square');
-const { nanoid } = require('nanoid');
+const logger = require("./controller/logger");
+const { ApiError, client: square } = require("./controller/square");
+const { nanoid } = require("nanoid");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
 const transporter = nodemailer.createTransport({
   port: 465,
-  host: 'smtp.gmail.com',
+  host: "smtp.gmail.com",
   auth: {
-    user: 'topwebdev.0612@gmail.com',
-    pass: 'topwebdev061207310321'
+    user: "topwebdev.0612@gmail.com",
+    pass: "topwebdev061207310321",
   },
-  secure: true
+  secure: true,
 });
 
 async function createPayment(req, res) {
@@ -56,7 +56,7 @@ async function createPayment(req, res) {
   console.log(name);
   await retry(async (bail, attempt) => {
     try {
-      logger.debug('Creating payment', { attempt });
+      logger.debug("Creating payment", { attempt });
 
       const idempotencyKey = payload.idempotencyKey || nanoid();
       //   const amount = payload.amount * 100;
@@ -64,12 +64,14 @@ async function createPayment(req, res) {
         givenName: name,
         // familyName: 'Postnicov',
         address: {
-          addressLine1: '1455 Market St',
-          addressLine2: 'San Francisco, CA 94103'
+          addressLine1: "1455 Market St",
+          addressLine2: "San Francisco, CA 94103",
         },
-        idempotencyKey
+        idempotencyKey,
       };
-      const createCustomerResponse = await square.customersApi.createCustomer(createCustomer);
+      const createCustomerResponse = await square.customersApi.createCustomer(
+        createCustomer
+      );
 
       const { customer } = createCustomerResponse.result;
       console.log(customer);
@@ -89,32 +91,34 @@ async function createPayment(req, res) {
           amount: 4900,
           // If you are a non-US account, you must change the currency to match the country in which
           // you are accepting the payment.
-          currency: 'CAD'
-        }
+          currency: "CAD",
+        },
       };
       if (payload.verificationToken) {
         payment.verificationToken = payload.verificationToken;
       }
 
-      const { result, statusCode } = await square.paymentsApi.createPayment(payment);
+      const { result, statusCode } = await square.paymentsApi.createPayment(
+        payment
+      );
 
-      logger.info('Payment succeeded!', { result, statusCode });
-      console.log('resultIs:', result, 'statusIs:', statusCode);
+      logger.info("Payment succeeded!", { result, statusCode });
+      console.log("resultIs:", result, "statusIs:", statusCode);
       send(res, statusCode, {
         success: true,
         payment: {
           id: result.payment.id,
           status: result.payment.status,
           receiptUrl: result.payment.receiptUrl,
-          orderId: result.payment.orderId
-        }
+          orderId: result.payment.orderId,
+        },
       });
       const html = `<b>Client name: ${name}</b><br><b>Client email: ${email}</b></br><br><b>Client phone number: ${phoneNumber}</b></br><br><b>Client Postalcode: ${postalCode}</b></br><br><b>You can check your square account to see.</b></br>`;
       const mailData = {
         from: email,
-        to: 'topwebdev.0612@gmail.com',
-        subject: 'Client paid $49 for escrow!',
-        html
+        to: "topwebdev.0612@gmail.com",
+        subject: "Client paid $49 for escrow!",
+        html,
       };
       transporter.sendMail(mailData, (error, info) => {
         if (error) {
@@ -141,7 +145,7 @@ async function sendBookData(req, res) {
   const { dateOfBooking, personalData, selectedPackage } = payload;
   const serviceType = payload.serviceTypeData.type;
   if (selectedPackage) {
-    let emailBody = '';
+    let emailBody = "";
     let totalBudget = Number(selectedPackage.budget);
     emailBody = `<br><b>SelectedPackage: ${selectedPackage.title} &nbsp; Budget: ${selectedPackage.budget}</b></br>`;
     for (let i = 0; i < selectedPackage.add_ons.length; i++) {
@@ -158,18 +162,18 @@ async function sendBookData(req, res) {
 
     mailData = {
       from: personalData.email,
-      to: 'topwebdev.0612@gmail.com',
-      subject: selectedPackage ? 'Booking request' : 'Call request',
+      to: "topwebdev.0612@gmail.com",
+      subject: selectedPackage ? "Booking request" : "Call request",
       text,
-      html
+      html,
     };
   } else {
     mailData = {
       from: personalData.email,
-      to: 'topwebdev.0612@gmail.com',
-      subject: 'Call request',
+      to: "topwebdev.0612@gmail.com",
+      subject: "Call request",
       // text,
-      html: `<b>Client name: ${personalData.name}</b><br><b>Client email: ${personalData.email}</b></br><br><b>Client phone number: ${personalData.phoneNumber}</b></br><br><b>Client Postalcode: ${personalData.postalCode}</b></br><br><b>Date&Time: ${dateOfBooking}</b></br>`
+      html: `<b>Client name: ${personalData.name}</b><br><b>Client email: ${personalData.email}</b></br><br><b>Client phone number: ${personalData.phoneNumber}</b></br><br><b>Client Postalcode: ${personalData.postalCode}</b></br><br><b>Date&Time: ${dateOfBooking}</b></br>`,
     };
   }
 
@@ -178,28 +182,30 @@ async function sendBookData(req, res) {
       console.log(error);
       return res.status(500).json(error);
     }
-    res.status(200).send({ message: 'mail send', message_id: info.messageId });
+    res.status(200).send({ message: "mail send", message_id: info.messageId });
   });
 }
 
-
 async function serveStatic(req, res) {
-	logger.debug("Handling request", req.path);
-	await staticHandler(req, res, {
-		public: "public",
-	});
+  logger.debug("Handling request", req.path);
+  await staticHandler(req, res, {
+    public: "public",
+  });
 }
 
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, authorization');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTIONS');
+  res.header("Access-Control-Allow-Origin", req.headers.origin);
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, authorization"
+  );
+  res.header("Access-Control-Allow-Methods", "GET,POST,DELETE,PUT,OPTIONS");
   next();
 });
 
-app.post('/payment', createPayment);
-app.post('/send-bookdata', sendBookData);
+app.post("/payment", createPayment);
+app.post("/send-bookdata", sendBookData);
 
 app.get("/", serveStatic);
 app.listen(PORT, () => {
